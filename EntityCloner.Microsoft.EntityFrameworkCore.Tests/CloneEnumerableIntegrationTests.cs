@@ -38,7 +38,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                         Name = "Netherlands"
                     }
                 },
-                Orders = new List<Order>
+                Orders = new HashSet<Order>
                 {
                     new Order
                     {
@@ -59,14 +59,14 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                                 Name = "Netherlands"
                             }
                         },
-                        OrderLines = new List<OrderLine>
+                        OrderLines = new HashSet<OrderLine>
                         {
                             new OrderLine
                             {
                                 Quantity = 1,
                                 Article = new Article
                                 {
-                                    ArticleTranslations = new List<ArticleTranslation>
+                                    ArticleTranslations = new HashSet<ArticleTranslation>
                                     {
                                         new ArticleTranslation
                                         {
@@ -86,7 +86,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                                 Quantity = 2,
                                 Article = new Article
                                 {
-                                    ArticleTranslations = new List<ArticleTranslation>
+                                    ArticleTranslations = new HashSet<ArticleTranslation>
                                     {
                                         new ArticleTranslation
                                         {
@@ -195,7 +195,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
         public async Task Customer_IList()
         {
             // Arrange
-            IList<Customer> entities = await TestDbContext.Set<Customer>()
+            var entities = await TestDbContext.Set<Customer>()
                 .Where(c => c.Id == _customer.Id)
                 .AsNoTracking()
                 .ToArrayAsync();
@@ -211,7 +211,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
         public async Task Customer_List()
         {
             // Arrange
-            List<Customer> entities = await TestDbContext.Set<Customer>()
+            var entities = await TestDbContext.Set<Customer>()
                 .Where(c => c.Id == _customer.Id)
                 .AsNoTracking()
                 .ToListAsync();

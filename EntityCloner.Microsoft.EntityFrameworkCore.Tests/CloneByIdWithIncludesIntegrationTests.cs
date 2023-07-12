@@ -34,7 +34,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                     Street = "Street",
                     Country = country
                 },
-                Orders = new List<Order>
+                Orders = new HashSet<Order>
                 {
                     new Order
                     {
@@ -53,7 +53,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                             Country = country
                         },
                         TotalOrderPrice = new Money{ Amount = 1000m, Currency = "EUR"},
-                        OrderLines = new List<OrderLine>
+                        OrderLines = new HashSet<OrderLine>
                         {
                             new OrderLine
                             {
@@ -62,7 +62,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                                 Article = new Article
                                 {
 
-                                    ArticleTranslations = new List<ArticleTranslation>
+                                    ArticleTranslations = new HashSet<ArticleTranslation>
                                     {
                                         new ArticleTranslation
                                         {
@@ -83,7 +83,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                                 UnitPrice  = new Money{ Amount = 250m, Currency = "EUR"},
                                 Article = new Article
                                 {
-                                    ArticleTranslations = new List<ArticleTranslation>
+                                    ArticleTranslations = new HashSet<ArticleTranslation>
                                     {
                                         new ArticleTranslation
                                         {

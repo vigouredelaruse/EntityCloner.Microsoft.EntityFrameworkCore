@@ -28,7 +28,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                     HouseNumber = 25,
                     Street = "Street"
                 },
-                Orders = new List<Order>
+                Orders = new HashSet<Order>
                 {
                     new Order()
                 }
@@ -72,7 +72,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                 IsDeleted = false,
                 OfferDate = offerDate,
                 OrderDate = orderDate,
-                OrderLines = new List<OrderLine>
+                OrderLines = new HashSet<OrderLine>
                 {
                     new OrderLine()
                 },

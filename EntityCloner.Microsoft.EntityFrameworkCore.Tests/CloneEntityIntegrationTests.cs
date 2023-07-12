@@ -30,7 +30,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                     HouseNumber = 25,
                     Street = "Street"
                 },
-                Orders = new List<Order>
+                Orders = new HashSet<Order>
                 {
                     new Order
                     {
@@ -42,14 +42,14 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                         OrderDate = _orderDate,
                         OrderStatus = OrderStatus.Order,
                         TenantId = 1,
-                        OrderLines = new List<OrderLine>
+                        OrderLines = new HashSet<OrderLine>
                         {
                             new OrderLine
                             {
                                 Quantity = 1,
                                 Article = new Article
                                 {
-                                    ArticleTranslations = new List<ArticleTranslation>
+                                    ArticleTranslations = new HashSet<ArticleTranslation>
                                     {
                                         new ArticleTranslation
                                         {
@@ -69,7 +69,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                                 Quantity = 2,
                                 Article = new Article
                                 {
-                                    ArticleTranslations = new List<ArticleTranslation>
+                                    ArticleTranslations = new HashSet<ArticleTranslation>
                                     {
                                         new ArticleTranslation
                                         {

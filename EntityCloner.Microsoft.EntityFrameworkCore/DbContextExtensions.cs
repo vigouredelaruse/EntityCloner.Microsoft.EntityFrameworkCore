@@ -111,7 +111,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             return Activator.CreateInstance(collectionType, collectionValue);
         }
 
-        private static Expression<Func<TEntity, bool>> CreatePrimaryKeyExpression<TEntity>(object[] primaryKey, List<PropertyInfo> primaryKeyProperties)
+        private static Expression<Func<TEntity, bool>> CreatePrimaryKeyExpression<TEntity>(object[] primaryKey, IList<PropertyInfo> primaryKeyProperties)
             where TEntity : class
         {
             Expression<Func<TEntity, bool>> primaryKeyExpression = e => true;
@@ -243,6 +243,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
         private static IEnumerable InternalCloneCollection(this DbContext source, Dictionary<object, object> references, object parentEntity, Type collectionItemType, string definingNavigationName, IReadOnlyEntityType definingEntityType, IEnumerable collectionValue)
         {
+            // begin brute force activation test
             var list = (IList) Activator.CreateInstance(typeof(List<>).MakeGenericType(collectionItemType));
             foreach (var item in collectionValue)
             {
