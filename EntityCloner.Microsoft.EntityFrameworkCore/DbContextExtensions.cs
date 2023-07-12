@@ -93,7 +93,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
         {
             if (collectionType.IsInterface)
             {
-                var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(entityType), collectionValue);
+                var list = Activator.CreateInstance(typeof(ICollection<>).MakeGenericType(entityType), collectionValue);
                 return list;
             }
 
@@ -241,7 +241,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             }
         }
 
-        private static IList InternalCloneCollection(this DbContext source, Dictionary<object, object> references, object parentEntity, Type collectionItemType, string definingNavigationName, IReadOnlyEntityType definingEntityType, IEnumerable collectionValue)
+        private static IEnumerable InternalCloneCollection(this DbContext source, Dictionary<object, object> references, object parentEntity, Type collectionItemType, string definingNavigationName, IReadOnlyEntityType definingEntityType, IEnumerable collectionValue)
         {
             var list = (IList) Activator.CreateInstance(typeof(List<>).MakeGenericType(collectionItemType));
             foreach (var item in collectionValue)
@@ -250,7 +250,9 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                 list.Add(clonedItemValue);
             }
 
-            return (IList)ConvertToCollectionType(collectionValue.GetType(), collectionItemType, list);
+            var ret = (IEnumerable)ConvertToCollectionType(collectionValue.GetType(), collectionItemType, list);
+
+            return (IEnumerable)ConvertToCollectionType(collectionValue.GetType(), collectionItemType, list);
         }
 
         private static void ResetEntityProperties(this DbContext source, object entity, string definingNavigationName, IReadOnlyEntityType definingEntityType, object clonedEntity)
