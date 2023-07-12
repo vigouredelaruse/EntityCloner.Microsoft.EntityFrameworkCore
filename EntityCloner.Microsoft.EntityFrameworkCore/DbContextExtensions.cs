@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -93,11 +94,11 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
         private static object ConvertToCollectionType(Type collectionType, Type entityType, IList collectionValue)
         {
-            if (collectionType.IsInterface)
-            {
-                var list = Activator.CreateInstance(typeof(ICollection<>).MakeGenericType(entityType), collectionValue);
-                return list;
-            }
+            //if (collectionType.IsInterface)
+            //{
+            //    var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(entityType), collectionValue);
+            //    return list;
+            //}
 
             if (collectionType.IsArray)
             {
@@ -110,8 +111,51 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                 return array;
             }
 
+            TypeFilter interfaceFilter = new TypeFilter(InterfaceFilter);
+            String[] interfaceList = new String[4]
+                {"System.Collections.IEnumerable",
+                "System.Collections.ICollection",
+                "System.Collections.Generic.IReadOnlyList",
+                "System.Collections.Generic.IList"};
+
+            for (int index = 0; index < interfaceList.Length; index++)
+            {
+                Type[] candidateInterfaces = collectionType.FindInterfaces(interfaceFilter,
+                    interfaceList[index]);
+                if (candidateInterfaces.Length > 0)
+                {
+                    //Console.WriteLine("\n{0} implements the interface {1}.",
+                    //    collectionType, interfaceList[index]);
+                    //for (int j = 0; j < myInterfaces.Length; j++)
+                    //    Console.WriteLine("Interfaces supported: {0}.",
+                    //        myInterfaces[j].ToString());
+
+                    if(candidateInterfaces.Where(w => w.Name.Equals("System.Collections.Generic.IReadOnlyList")).Any())
+                    {
+                        var readOnlyCollection = Activator.CreateInstance(typeof(ReadOnlyCollection<>).MakeGenericType(entityType), collectionValue);
+                        return readOnlyCollection;
+                    }
+
+                    var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(entityType), collectionValue);
+                    return list;
+                }
+                else
+                    Console.WriteLine(
+                        "\n{0} does not implement the interface {1}.",
+                        collectionType, interfaceList[index]);
+            }
+
             return Activator.CreateInstance(collectionType, collectionValue);
         }
+
+        public static bool InterfaceFilter(Type typeObj, Object criteriaObj)
+        {
+            if (typeObj.ToString() == criteriaObj.ToString())
+                return true;
+            else
+                return false;
+        }
+
 
         private static Expression<Func<TEntity, bool>> CreatePrimaryKeyExpression<TEntity>(object[] primaryKey, IList<PropertyInfo> primaryKeyProperties)
             where TEntity : class
