@@ -250,8 +250,6 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                 list.Add(clonedItemValue);
             }
 
-            var ret = (IEnumerable)ConvertToCollectionType(collectionValue.GetType(), collectionItemType, list);
-
             return (IEnumerable)ConvertToCollectionType(collectionValue.GetType(), collectionItemType, list);
         }
 
