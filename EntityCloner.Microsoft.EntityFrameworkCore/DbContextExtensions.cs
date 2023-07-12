@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -10,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.VisualBasic;
 
 namespace EntityCloner.Microsoft.EntityFrameworkCore
 {
@@ -244,7 +246,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
         private static IEnumerable InternalCloneCollection(this DbContext source, Dictionary<object, object> references, object parentEntity, Type collectionItemType, string definingNavigationName, IReadOnlyEntityType definingEntityType, IEnumerable collectionValue)
         {
             // begin brute force activation test
-            var list = (IList) Activator.CreateInstance(typeof(List<>).MakeGenericType(collectionItemType));
+            var list = (IList) Activator.CreateInstance(typeof(Collection<>).MakeGenericType(collectionItemType));
             foreach (var item in collectionValue)
             {
                 var clonedItemValue = source.InternalClone(item, definingNavigationName, definingEntityType, references);
