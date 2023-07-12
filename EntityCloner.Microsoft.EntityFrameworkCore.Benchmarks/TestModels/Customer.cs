@@ -10,6 +10,6 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests.TestModels
         public DateTime BirthDate { get; set; }
         public Address Address { get; set; }
 
-        public ICollection<Order> Orders { get; set; } = new HashSet<Order>();
+        public ICollection<Order> Orders { get; set; } = new List<Order>();
     }
 }

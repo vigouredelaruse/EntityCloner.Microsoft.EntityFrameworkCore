@@ -38,7 +38,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                         Name = "Netherlands"
                     }
                 },
-                Orders = new HashSet<Order>
+                Orders = new List<Order>
                 {
                     new Order
                     {
@@ -59,7 +59,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
                                 Name = "Netherlands"
                             }
                         },
-                        OrderLines = new HashSet<OrderLine>
+                        OrderLines = new List<OrderLine>
                         {
                             new OrderLine
                             {
