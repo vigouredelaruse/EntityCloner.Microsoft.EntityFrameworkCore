@@ -188,7 +188,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
             var cloneList = await TestDbContext.CloneAsync(new Collection<Customer>(entities));
 
             // Assert
-            Assert.Single((IEnumerable)cloneList);
+            Assert.Single(cloneList);
         }
 
         [Fact]
