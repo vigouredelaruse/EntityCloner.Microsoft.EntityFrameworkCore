@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using EntityCloner.Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace EntityCloner.Microsoft.EntityFrameworkCore
 {
@@ -29,7 +30,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
         {
             IReadOnlyEntityType entityType;
             if ((typeof(TEntity).IsGenericType && typeof(TEntity).GetGenericTypeDefinition() == typeof(IEnumerable<>)) ||
-                (typeof(TEntity).GetInterfaces().Any(i=>i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))))
+                (typeof(TEntity).GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))))
             {
                 var entityClrType = (typeof(TEntity).HasElementType ? typeof(TEntity).GetElementType() : typeof(TEntity).GenericTypeArguments[0]) ?? typeof(TEntity);
 
@@ -50,7 +51,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             {
                 throw new ArgumentException($"Argument should be a known entity of the DbContext", nameof(entityOrListOfEntities));
             }
-            
+
             var clonedEntity = (TEntity)source.InternalClone(entityOrListOfEntities, null, null, new Dictionary<object, object>());
 
             return await Task.FromResult(clonedEntity);
@@ -66,7 +67,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             where TEntity : class
         {
             var entityType = source.FindCurrentEntityType(typeof(TEntity), null, null);
-            var  primaryKeyProperties = entityType?.FindPrimaryKey()?.Properties.Select(p=>p.PropertyInfo).ToList();
+            var primaryKeyProperties = entityType?.FindPrimaryKey()?.Properties.Select(p => p.PropertyInfo).ToList();
             if (primaryKeyProperties == null)
             {
                 throw new NotSupportedException("CloneAsync only can handle types with PrimaryKey configuration'");
@@ -211,27 +212,27 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
         private static void ResetNavigationProperties(this DbContext source, object entity, string definingNavigationName, IReadOnlyEntityType definingEntityType, Dictionary<object, object> references, object clonedEntity)
         {
-            var entityName = entity.GetType().Name;
-            var model = source.Model.FindEntityType(entity.GetType()); 
-            var navigations = model.GetNavigations();
-            IEnumerable<ISkipNavigation> skipNavigations = model.GetSkipNavigations();
-            IEnumerable<INavigation> derivedNavigations = model.GetDerivedNavigations();
-            foreach (var navigation in navigations)
-            // foreach (var navigation in source.FindCurrentEntityType(entity.GetType(), definingNavigationName, definingEntityType).GetNavigations())
+
+            foreach (var navigation in source.FindCurrentEntityType(entity.GetType(), definingNavigationName, definingEntityType).GetNavigations())
             {
                 ResetNavigationProperty(source, entity, references, clonedEntity, navigation);
             }
 
-            foreach (var navigation in skipNavigations)
-            // foreach (var navigation in source.FindCurrentEntityType(entity.GetType(), definingNavigationName, definingEntityType).GetNavigations())
+            var entityName = entity.GetType().Name;
+            var model = source.Model.FindEntityType(entity.GetType());
+            if (model != null)
             {
-                ResetNavigationSkipProperty(source, entity, references, clonedEntity, navigation);
+                IEnumerable<ISkipNavigation> skipNavigations = model.GetSkipNavigations();
+
+                foreach (var navigation in skipNavigations)
+                {
+                    ResetSkipNavigationProperty(source, entity, references, clonedEntity, navigation);
+                }
             }
         }
 
-
         private static void ResetNavigationProperty<TNavigation>(DbContext source, object entity, Dictionary<object, object> references, object clonedEntity, TNavigation navigation)
-            where TNavigation : INavigation
+            where TNavigation : IReadOnlyNavigation
         {
             var navigationValue = navigation.PropertyInfo?.GetValue(entity);
 
@@ -260,7 +261,8 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             }
         }
 
-        private static void ResetNavigationSkipProperty<TNavigation>(DbContext source, object entity, Dictionary<object, object> references, object clonedEntity, TNavigation navigation)
+
+        private static void ResetSkipNavigationProperty<TNavigation>(DbContext source, object entity, Dictionary<object, object> references, object clonedEntity, TNavigation navigation)
             where TNavigation : ISkipNavigation
         {
             var navigationValue = navigation.PropertyInfo?.GetValue(entity);
@@ -327,7 +329,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             if (!string.IsNullOrEmpty(definingNavigationName) && definingEntityType != null)
             {
                 var entity = source.Model.FindEntityType(entityClrType, definingNavigationName, definingEntityType);
-                if(entity != null)
+                if (entity != null)
                 {
                     return entity;
                 }
