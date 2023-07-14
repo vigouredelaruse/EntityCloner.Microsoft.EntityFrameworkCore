@@ -46,6 +46,17 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
                 var clonedEntities = source.InternalCloneCollection(new Dictionary<object, object>(), null, entityClrType, null, null, (IEnumerable)entityOrListOfEntities);
 
+                if (typeof(TEntity).Name.StartsWith("ReadOnlyCollection"))
+                {
+                    Type type = typeof(TEntity);
+                    var constructors = type.GetConstructors();
+                    // ConstructorInfo ctor = type.GetConstructor(new[] { typeof(IList<>) });
+                    // var genericType = type.GetType().GetGenericArguments()[0];
+                    ConstructorInfo ctor = type.GetConstructor(new[] { clonedEntities.AsQueryable().ElementType });
+                    object instance = constructors[0].Invoke(new object[] { clonedEntities });
+                    return (TEntity)instance;
+                }
+
                 return (TEntity)clonedEntities;
             }
 
