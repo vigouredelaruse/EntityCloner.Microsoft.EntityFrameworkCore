@@ -48,12 +48,21 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
                 if (typeof(TEntity).Name.StartsWith("ReadOnlyCollection"))
                 {
+                    // instance = new TEntity<clonedEntities.AsQueryable().ElementType>(clonedEntities)
                     Type type = typeof(TEntity);
                     var constructors = type.GetConstructors();
-                    // ConstructorInfo ctor = type.GetConstructor(new[] { typeof(IList<>) });
-                    // var genericType = type.GetType().GetGenericArguments()[0];
                     ConstructorInfo ctor = type.GetConstructor(new[] { clonedEntities.AsQueryable().ElementType });
                     object instance = constructors[0].Invoke(new object[] { clonedEntities });
+                    return (TEntity)instance;
+                }
+
+                else if (typeof(TEntity).Name.StartsWith("Collection"))
+                {
+                    // instance = new Collection<clonedEntities.AsQueryable().ElementType>(clonedEntities)
+                    Type type = typeof(TEntity);
+                    var constructors = type.GetConstructors();
+                    ConstructorInfo ctor = constructors[1]; // (new[] { clonedEntities.AsQueryable().ElementType });
+                    object instance = constructors[1].Invoke(new object[] { clonedEntities });
                     return (TEntity)instance;
                 }
 
