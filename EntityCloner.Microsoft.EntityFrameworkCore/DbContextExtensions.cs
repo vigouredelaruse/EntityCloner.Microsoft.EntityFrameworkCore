@@ -6,6 +6,8 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using EntityCloner.Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore;
@@ -120,6 +122,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             //    return list;
             //}
 
+            var interfaces = collectionType.GetInterfaces();
             if (collectionType.IsArray)
             {
                 var array = Array.CreateInstance(entityType, collectionValue.Count);
@@ -132,11 +135,12 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             }
 
             TypeFilter interfaceFilter = new TypeFilter(InterfaceFilter);
-            String[] interfaceList = new String[4]
+            String[] interfaceList = new String[5]
                 {"System.Collections.IEnumerable",
                 "System.Collections.ICollection",
                 "System.Collections.Generic.IReadOnlyList",
-                "System.Collections.Generic.IList"};
+                "System.Collections.Generic.IList",
+                "System.Collections.Generic.ISet"};
 
             for (int index = 0; index < interfaceList.Length; index++)
             {
@@ -156,6 +160,12 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                         return readOnlyCollection;
                     }
 
+                    if (candidateInterfaces.Where(w => w.Name.StartsWith("System.Collections.Generic.ISet")).Any())
+                    {
+                        var hashSetResult = Activator.CreateInstance(typeof(HashSet<>).MakeGenericType(entityType), collectionValue);
+                        return hashSetResult;
+                    }
+
                     var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(entityType), collectionValue);
                     return list;
                 }
@@ -168,7 +178,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             return Activator.CreateInstance(collectionType, collectionValue);
         }
 
-        public static bool InterfaceFilter(Type typeObj, Object criteriaObj)
+        private static bool InterfaceFilter(Type typeObj, Object criteriaObj)
         {
             if (typeObj.ToString() == criteriaObj.ToString())
                 return true;
@@ -249,11 +259,18 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             else
             {
                 var entityEntry = source.Entry(entity);
-                clonedEntity = entityEntry.CurrentValues.ToObject();
+                // clonedEntity = entityEntry.CurrentValues.ToObject();
+                JsonSerializerOptions jsonSerializerOptions = new()
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve,
+                    WriteIndented = true
+                };
+                string jsonString = JsonSerializer.Serialize(entity, jsonSerializerOptions);
+                clonedEntity = JsonSerializer.Deserialize(jsonString, entity.GetType(), jsonSerializerOptions);
             }
 
             references.Add(entity, clonedEntity);
-            // source.CloneOwnedEntityProperties(entity, definingNavigationName, definingEntityType, references, clonedEntity);
+            /// source.CloneOwnedEntityProperties(entity, definingNavigationName, definingEntityType, references, clonedEntity);
 
             source.ResetEntityProperties(entity, definingNavigationName, definingEntityType, clonedEntity);
 
