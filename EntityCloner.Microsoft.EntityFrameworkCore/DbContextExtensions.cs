@@ -186,8 +186,11 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             else
             {
                 var entityEntry = source.Entry(entity);
-                // clonedEntity = entityEntry.CurrentValues.ToObject();
 
+                // note - this results in a shallow clone
+                // in some scenarios
+                // clonedEntity = entityEntry.CurrentValues.ToObject();
+                
                 JsonSerializerOptions jsonSerializerOptions = new()
                 {
                     ReferenceHandler = ReferenceHandler.Preserve,
