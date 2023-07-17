@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading.Tasks;
 using EntityCloner.Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore;
@@ -183,7 +186,15 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             else
             {
                 var entityEntry = source.Entry(entity);
-                clonedEntity = entityEntry.CurrentValues.ToObject();
+                // clonedEntity = entityEntry.CurrentValues.ToObject();
+
+                JsonSerializerOptions jsonSerializerOptions = new()
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve,
+                    WriteIndented = true
+                };
+                string jsonString = JsonSerializer.Serialize(entity, jsonSerializerOptions);
+                clonedEntity = JsonSerializer.Deserialize(jsonString, entity.GetType(), jsonSerializerOptions);
             }
 
             references.Add(entity, clonedEntity);

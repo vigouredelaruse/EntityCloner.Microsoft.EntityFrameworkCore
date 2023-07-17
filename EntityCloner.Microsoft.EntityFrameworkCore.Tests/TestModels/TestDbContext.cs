@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using EntityCloner.Microsoft.EntityFrameworkCore.Benchmarks.TestModels;
+using Microsoft.EntityFrameworkCore;
 
 namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests.TestModels
 {
@@ -9,6 +10,8 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests.TestModels
         public DbSet<OrderLine> OrderLines { get; set; }
         public DbSet<Article> Articles { get; set; }
         public DbSet<ArticleTranslation> ArticleTranslations { get; set; }
+
+        public DbSet<TranslationService> TranslationServices { get; set; }
 
         public TestDbContext(DbContextOptions options)
             : base(options)

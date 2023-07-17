@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using EntityCloner.Microsoft.EntityFrameworkCore.Benchmarks.TestModels;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests.TestModels
@@ -9,5 +10,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests.TestModels
         public byte[] RowVersion { get; set; }
         public ICollection<OrderLine> OrderLines { get; set; } = new Collection<OrderLine>();
         public ICollection<ArticleTranslation> ArticleTranslations { get; set; } = new Collection<ArticleTranslation>();
+
+        public ICollection<TranslationService> TranslationServices { get; set; } = new Collection<TranslationService>();
     }
 }
