@@ -189,8 +189,8 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
                 // note - this results in a shallow clone
                 // in some scenarios
-                clonedEntity = entityEntry.CurrentValues.ToObject();
-                
+                // clonedEntity = entityEntry.CurrentValues.ToObject();
+
                 JsonSerializerOptions jsonSerializerOptions = new()
                 {
                     ReferenceHandler = ReferenceHandler.Preserve,
