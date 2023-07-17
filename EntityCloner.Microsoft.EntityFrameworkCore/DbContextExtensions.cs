@@ -189,7 +189,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
                 // note - this results in a shallow clone
                 // in some scenarios
-                // clonedEntity = entityEntry.CurrentValues.ToObject();
+                clonedEntity = entityEntry.CurrentValues.ToObject();
                 
                 JsonSerializerOptions jsonSerializerOptions = new()
                 {
@@ -197,7 +197,8 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                     WriteIndented = true
                 };
                 string jsonString = JsonSerializer.Serialize(entity, jsonSerializerOptions);
-                clonedEntity = JsonSerializer.Deserialize(jsonString, entity.GetType(), jsonSerializerOptions);
+                var jsonClone = JsonSerializer.Deserialize(jsonString, entity.GetType(), jsonSerializerOptions);
+                clonedEntity = jsonClone;
             }
 
             references.Add(entity, clonedEntity);
