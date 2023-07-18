@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading.Tasks;
 using EntityCloner.Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace EntityCloner.Microsoft.EntityFrameworkCore
 {
@@ -37,7 +37,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                 entityType = source.FindCurrentEntityType(entityClrType, null, null);
                 if (entityType == null)
                 {
-                    throw new ArgumentException($"Argument should be a known entity of the DbContext", nameof(entityOrListOfEntities));
+                    throw new ArgumentException("Argument should be a known entity of the DbContext", nameof(entityOrListOfEntities));
                 }
 
                 var clonedEntities = source.InternalCloneCollection(new Dictionary<object, object>(), entityClrType, null, null, (IEnumerable)entityOrListOfEntities);
@@ -49,7 +49,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
             if (entityType == null)
             {
-                throw new ArgumentException($"Argument should be a known entity of the DbContext", nameof(entityOrListOfEntities));
+                throw new ArgumentException("Argument should be a known entity of the DbContext", nameof(entityOrListOfEntities));
             }
 
             var clonedEntity = (TEntity)source.InternalClone(entityOrListOfEntities, null, null, new Dictionary<object, object>());
@@ -63,7 +63,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             return source.CloneAsync<TEntity>(includeQuery => includeQuery, primaryKey);
         }
 
-        public static async Task<TEntity> CloneAsync<TEntity>(this DbContext source, Func<IClonableQueryable<TEntity>, IClonableQueryable<TEntity>> includeQuery,  params object[] primaryKey)
+        public static async Task<TEntity> CloneAsync<TEntity>(this DbContext source, Func<IClonableQueryable<TEntity>, IClonableQueryable<TEntity>> includeQuery, params object[] primaryKey)
             where TEntity : class
         {
             var entityType = source.FindCurrentEntityType(typeof(TEntity), null, null);
@@ -84,45 +84,6 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             var entity = await clonableQueryable.Queryable.SingleAsync();
 
             var clonedEntity = (TEntity)source.InternalClone(entity, null, null, new Dictionary<object, object>());
-
-            return clonedEntity;
-        }
-
-        /// <summary>
-        /// support action delegate on clone
-        /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="source"></param>
-        /// <param name="includeQuery"></param>
-        /// <param name="navigationAction"></param>
-        /// <param name="skipNavigationAction"></param>
-        /// <param name="primaryKey"></param>
-        /// <returns></returns>
-        /// <exception cref="NotSupportedException"></exception>
-        public static async Task<TEntity> CloneAsync<TEntity>(this DbContext source, 
-            Func<IClonableQueryable<TEntity>, IClonableQueryable<TEntity>> includeQuery, 
-            Func<TypeInfo, bool> itemActionFilter, Func<object, object>? itemAction,  
-            params object[] primaryKey)
-            where TEntity : class
-        {
-            var entityType = source.FindCurrentEntityType(typeof(TEntity), null, null);
-            var primaryKeyProperties = entityType?.FindPrimaryKey()?.Properties.Select(p => p.PropertyInfo).ToList();
-            if (primaryKeyProperties == null)
-            {
-                throw new NotSupportedException("CloneAsync only can handle types with PrimaryKey configuration'");
-            }
-
-            var primaryKeyExpression = CreatePrimaryKeyExpression<TEntity>(primaryKey, primaryKeyProperties);
-
-            var query = source.Set<TEntity>().AsNoTracking().Where(primaryKeyExpression);
-
-            var clonableQueryable = new ClonableQueryable<TEntity>(query);
-
-            clonableQueryable = (ClonableQueryable<TEntity>)includeQuery(clonableQueryable);
-
-            var entity = await clonableQueryable.Queryable.SingleAsync();
-
-            var clonedEntity = (TEntity)source.InternalClone(entity, null, null, new Dictionary<object, object>(), itemActionFilter, itemAction);
 
             return clonedEntity;
         }
@@ -213,80 +174,20 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                 return references[entity];
             }
 
-            object clonedEntity;
-            // in case of owned type
-            if (!string.IsNullOrEmpty(definingNavigationName) && definingEntityType != null)
+            JsonSerializerOptions jsonSerializerOptions = new()
             {
-                // TODO: clone entity instead of assigning original reference
-                clonedEntity = entity;
-            }
-            else
-            {
-                var entityEntry = source.Entry(entity);
-                clonedEntity = entityEntry.CurrentValues.ToObject();
-            }
-
+                ReferenceHandler = ReferenceHandler.Preserve,
+                WriteIndented = true
+            };
+            string jsonString = JsonSerializer.Serialize(entity, jsonSerializerOptions);
+            object clonedEntity = JsonSerializer.Deserialize(jsonString, entity.GetType(), jsonSerializerOptions);
+            
             references.Add(entity, clonedEntity);
             // source.CloneOwnedEntityProperties(entity, definingNavigationName, definingEntityType, references, clonedEntity);
 
             source.ResetEntityProperties(entity, definingNavigationName, definingEntityType, clonedEntity);
 
             source.ResetNavigationProperties(entity, definingNavigationName, definingEntityType, references, clonedEntity);
-
-            return clonedEntity;
-        }
-
-        /// <summary>
-        /// support action delegate on clone
-        /// </summary>
-        /// <typeparam name="TEntity"></typeparam>
-        /// <param name="source"></param>
-        /// <param name="entity"></param>
-        /// <param name="definingNavigationName"></param>
-        /// <param name="definingEntityType"></param>
-        /// <param name="references"></param>
-        /// <param name="navigationAction"></param>
-        /// <param name="skipNavigationAction"></param>
-        /// <returns></returns>
-        private static object InternalClone(this DbContext source, object entity, 
-            string definingNavigationName, IReadOnlyEntityType definingEntityType, 
-            Dictionary<object, object> references, 
-            Func<TypeInfo, bool> itemActionFilter, Func<object, object> itemAction)
-        {
-            if (references.ContainsKey(entity))
-            {
-                return references[entity];
-            }
-
-            object clonedEntity;
-            // in case of owned type
-            if (!string.IsNullOrEmpty(definingNavigationName) && definingEntityType != null)
-            {
-                // TODO: clone entity instead of assigning original reference
-                clonedEntity = entity;
-            }
-            else
-            {
-                var entityEntry = source.Entry(entity);
-                var materializedEntity = entityEntry.CurrentValues.ToObject();
-                if(materializedEntity != null && itemAction != null && itemActionFilter != null 
-                    && itemActionFilter(materializedEntity.GetType().GetTypeInfo()))
-                {
-                    clonedEntity = itemAction(materializedEntity);
-                }
-                else
-                {
-                    clonedEntity = materializedEntity;
-                }
-
-            }
-
-            references.Add(entity, clonedEntity);
-            // source.CloneOwnedEntityProperties(entity, definingNavigationName, definingEntityType, references, clonedEntity);
-
-            source.ResetEntityProperties(entity, definingNavigationName, definingEntityType, clonedEntity);
-
-            source.ResetNavigationProperties(entity, definingNavigationName, definingEntityType, references, clonedEntity, itemActionFilter, itemAction);
 
             return clonedEntity;
         }
@@ -304,22 +205,17 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
         //    }
         //}
 
-        private static void ResetNavigationProperties(this DbContext source, object entity, string definingNavigationName, IReadOnlyEntityType definingEntityType, Dictionary<object, object> references, object clonedEntity,
-            Func<TypeInfo, bool>? itemActionFilter = null, Func<object, object>? itemAction = null)
+        private static void ResetNavigationProperties(this DbContext source, object entity, string definingNavigationName, IReadOnlyEntityType definingEntityType, Dictionary<object, object> references, object clonedEntity)
         {
-            // NOTE: source.FindCurrentEnttityType or source.Model.FIndEntityType, what is the difference?
-            foreach (var navigation in source.FindCurrentEntityType(entity.GetType(), definingNavigationName, definingEntityType).GetNavigations())
+            var entityType = source.FindCurrentEntityType(entity.GetType(), definingNavigationName, definingEntityType);
+            if (entityType != null)
             {
-                ResetNavigationProperty(source, entity, references, clonedEntity, navigation);
-            }
+                foreach (var navigation in entityType.GetNavigations())
+                {
+                    ResetNavigationProperty(source, entity, references, clonedEntity, navigation);
+                }
 
-            // var entityName = entity.GetType().Name;
-            // NOTE: why not use source.FindCurrentEntityType(entity.GetType(), definingNavigationName, definingEntityType)?
-            var model = source.Model.FindEntityType(entity.GetType());
-            if (model != null)
-            {
-                IEnumerable<ISkipNavigation> skipNavigations = model.GetSkipNavigations();
-
+                IEnumerable<IReadOnlySkipNavigation> skipNavigations = entityType.GetSkipNavigations();
                 foreach (var navigation in skipNavigations)
                 {
                     ResetSkipNavigationProperty(source, entity, references, clonedEntity, navigation);
@@ -329,37 +225,6 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 
         private static void ResetNavigationProperty<TNavigation>(DbContext source, object entity, Dictionary<object, object> references, object clonedEntity, TNavigation navigation)
             where TNavigation : IReadOnlyNavigation
-        {
-            var navigationValue = navigation.PropertyInfo?.GetValue(entity);
-
-                if (navigation.IsOnDependent && navigationValue != null)
-                {
-                    foreach (var foreignKeyProperty in navigation.ForeignKey.Properties)
-                    {
-                        ResetProperty(foreignKeyProperty, clonedEntity);
-                    }
-                }
-
-            if (navigationValue != null)
-            {
-                if (navigation.IsCollection)
-                {
-                    //var collection = source.InternalCloneCollection(references, entity, navigation.ClrType.GenericTypeArguments[0], navigation.ForeignKey.DeclaringEntityType.DefiningNavigationName, navigation.ForeignKey.DeclaringEntityType.DefiningEntityType, (IEnumerable)navigationValue);
-                    var collection = source.InternalCloneCollection(references, navigation.ClrType.GenericTypeArguments[0], navigation.Name, navigation.DeclaringEntityType, (IEnumerable)navigationValue);
-                    navigation.PropertyInfo.SetValue(clonedEntity, collection);
-                }
-                else
-                {
-                    //var clonedPropertyValue = source.InternalClone(navigationValue, navigation.ForeignKey.DeclaringEntityType.DefiningNavigationName, navigation.ForeignKey.DeclaringEntityType.DefiningEntityType, references);
-                    var clonedPropertyValue = source.InternalClone(navigationValue, navigation.Name, navigation.DeclaringEntityType, references);
-                    navigation.PropertyInfo.SetValue(clonedEntity, clonedPropertyValue);
-                }
-            }
-        }
-
-
-        private static void ResetSkipNavigationProperty<TNavigation>(DbContext source, object entity, Dictionary<object, object> references, object clonedEntity, TNavigation navigation)
-            where TNavigation : ISkipNavigation
         {
             var navigationValue = navigation.PropertyInfo?.GetValue(entity);
 
@@ -388,9 +253,42 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             }
         }
 
+
+        private static void ResetSkipNavigationProperty<TNavigation>(DbContext source, object entity,
+            Dictionary<object, object> references, object clonedEntity, TNavigation navigation)
+            where TNavigation : IReadOnlySkipNavigation
+        {
+            var navigationValue = navigation.PropertyInfo?.GetValue(entity);
+            if (navigationValue != null)
+            {
+                if (navigation.ForeignKey != null && navigation.IsOnDependent)
+                {
+                    foreach (var foreignKeyProperty in navigation.ForeignKey.Properties)
+                    {
+                        ResetProperty(foreignKeyProperty, clonedEntity);
+                    }
+                }
+
+                if (navigation.IsCollection)
+                {
+                    //var collection = source.InternalCloneCollection(references, entity, navigation.ClrType.GenericTypeArguments[0], navigation.ForeignKey.DeclaringEntityType.DefiningNavigationName, navigation.ForeignKey.DeclaringEntityType.DefiningEntityType, (IEnumerable)navigationValue);
+                    var collection = source.InternalCloneCollection(references, navigation.ClrType.GenericTypeArguments[0], navigation.Name, navigation.DeclaringEntityType, (IEnumerable)navigationValue);
+                    navigation.PropertyInfo.SetValue(clonedEntity, collection);
+                }
+                else
+                {
+                    //var clonedPropertyValue = source.InternalClone(navigationValue, navigation.ForeignKey.DeclaringEntityType.DefiningNavigationName, navigation.ForeignKey.DeclaringEntityType.DefiningEntityType, references);
+                    var clonedPropertyValue = source.InternalClone(navigationValue, navigation.Name, navigation.DeclaringEntityType, references);
+                    navigation.PropertyInfo.SetValue(clonedEntity, clonedPropertyValue);
+                }
+            }
+        }
+
         private static IEnumerable InternalCloneCollection(this DbContext source, Dictionary<object, object> references, Type collectionItemType, string definingNavigationName, IReadOnlyEntityType definingEntityType, IEnumerable collectionValue)
         {
-            var list = (IList)Activator.CreateInstance(typeof(Collection<>).MakeGenericType(collectionItemType));
+            // https://learn.microsoft.com/en-us/ef/core/modeling/relationships/navigations#collection-types
+            // The underlying collection instance must be implement ICollection<T>, and must have a working Add method. It is common to use List<T> or HashSet<T>
+            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(collectionItemType));
             if (list == null)
             {
                 throw new ArgumentNullException(nameof(collectionItemType));
@@ -425,7 +323,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             if (!string.IsNullOrEmpty(definingNavigationName) && definingEntityType != null)
             {
                 var entity = source.Model.FindEntityType(entityClrType, definingNavigationName, definingEntityType);
-                if(entity != null)
+                if (entity != null)
                 {
                     return entity;
                 }
