@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using EntityCloner.Microsoft.EntityFrameworkCore.Tests.TestBase;
@@ -141,6 +142,35 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore.Tests
             Assert.Equal(entity.Name, clone.Name);
             Assert.Null(clone.Assets);
             Assert.Empty(clone.Posts);
+        }
+
+
+        [Fact]
+        public async Task Customer_CloneWithoutIncludes_ApplyDelegate()
+        {
+            // Arrange
+            var entity = await TestDbContext.Set<Blog>()
+                .Where(c => c.Id == _blog.Id)
+                .Include(i => i.Assets)
+                .Include(i => i.Posts)
+                .AsNoTracking()
+                .SingleAsync();
+
+            // Act
+            var clone = await TestDbContext.CloneAsync(entity,w => w.Name.Equals("Blog"), w =>
+            {
+                ((Blog)w).Name = "BlogName Updated";
+                return w;
+            });
+
+            // Assert
+            Assert.NotNull(clone);
+            Assert.Equal(0, clone.Id);
+            Assert.StartsWith("BlogName",clone.Name);
+            Assert.NotNull(clone.Assets);
+            Assert.NotEmpty(clone.Posts);
+
+
         }
 
 

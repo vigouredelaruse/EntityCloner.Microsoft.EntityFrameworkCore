@@ -15,7 +15,8 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
 {
     public static class DbContextExtensions
     {
-        public static async Task<IList<TEntity>> CloneAsync<TEntity>(this DbContext source, IQueryable<TEntity> queryable)
+        public static async Task<IList<TEntity>> CloneAsync<TEntity>(this DbContext source, IQueryable<TEntity> queryable,
+             Func<TypeInfo, bool>? itemActionFilter = null, Func<object, object>? itemAction = null)
             where TEntity : class
         {
             var entities = await queryable.AsNoTracking().ToListAsync();
@@ -25,7 +26,8 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             return clonedEntities.Cast<TEntity>().ToList();
         }
 
-        public static async Task<TEntity> CloneAsync<TEntity>(this DbContext source, TEntity entityOrListOfEntities)
+        public static async Task<TEntity> CloneAsync<TEntity>(this DbContext source, TEntity entityOrListOfEntities,
+             Func<TypeInfo, bool>? itemActionFilter = null, Func<object, object>? itemAction = null)
             where TEntity : class
         {
             IReadOnlyEntityType entityType;
@@ -40,7 +42,7 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                     throw new ArgumentException("Argument should be a known entity of the DbContext", nameof(entityOrListOfEntities));
                 }
 
-                var clonedEntities = source.InternalCloneCollection(new Dictionary<object, object>(), entityClrType, null, null, (IEnumerable)entityOrListOfEntities);
+                var clonedEntities = source.InternalCloneCollection(new Dictionary<object, object>(), entityClrType, null, null, (IEnumerable)entityOrListOfEntities, itemActionFilter, itemAction);
 
                 return (TEntity)clonedEntities;
             }
@@ -52,7 +54,8 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
                 throw new ArgumentException("Argument should be a known entity of the DbContext", nameof(entityOrListOfEntities));
             }
 
-            var clonedEntity = (TEntity)source.InternalClone(entityOrListOfEntities, null, null, new Dictionary<object, object>());
+            var clonedEntity = (TEntity)source.InternalClone(entityOrListOfEntities, null, null, new Dictionary<object, object>(),
+                itemActionFilter, itemAction);
 
             return await Task.FromResult(clonedEntity);
         }
