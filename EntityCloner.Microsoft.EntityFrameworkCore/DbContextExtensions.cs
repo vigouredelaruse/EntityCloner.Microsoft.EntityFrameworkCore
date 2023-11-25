@@ -91,7 +91,21 @@ namespace EntityCloner.Microsoft.EntityFrameworkCore
             return clonedEntity;
         }
 
-        public static async Task<TEntity> CloneAsync<TEntity>(this DbContext source, Func<IClonableQueryable<TEntity>, 
+        /// <summary>
+        /// this method name variation is caused by
+        /// method selection errors under .net 8
+        /// whereby CloneAsync<TEntity>(this DbContext source, params object[] primaryKey)
+        /// greedy matches, potentially with uncleaned projects
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="includeQuery"></param>
+        /// <param name="itemActionFilter"></param>
+        /// <param name="itemAction"></param>
+        /// <param name="primaryKey"></param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public static async Task<TEntity> CloneWithGraphVisitorAsync<TEntity>(this DbContext source, Func<IClonableQueryable<TEntity>, 
             IClonableQueryable<TEntity>> includeQuery,
             Func<TypeInfo, bool>? itemActionFilter, Func<object, object>? itemAction, params object[] primaryKey)
         where TEntity : class
